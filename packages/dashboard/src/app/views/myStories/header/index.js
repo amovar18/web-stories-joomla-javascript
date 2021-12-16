@@ -59,12 +59,13 @@ const StyledPill = styled(Pill)`
 
   & > span {
     padding-left: 8px;
-    color: ${({ theme }) => theme.colors.fg.tertiary};
+    color: ${({ theme, isActive }) =>
+      isActive ? theme.colors.gray[20] : theme.colors.fg.tertiary};
   }
 `;
 function Header({
   filter,
-  isLoading,
+  initialPageReady,
   search,
   sort,
   stories,
@@ -72,6 +73,7 @@ function Header({
   view,
   author,
   queryAuthorsBySearch,
+  showAuthorDropdown,
 }) {
   const {
     actions: { scrollToTop },
@@ -91,7 +93,6 @@ function Header({
     ),
     view: DASHBOARD_VIEWS.DASHBOARD,
   });
-
   const handleClick = useCallback(
     (filterValue) => {
       filter.set(filterValue);
@@ -102,8 +103,8 @@ function Header({
 
   const HeaderToggleButtons = useMemo(() => {
     if (
-      totalStoriesByStatus &&
-      Object.keys(totalStoriesByStatus).length === 0
+      !initialPageReady ||
+      (totalStoriesByStatus && Object.keys(totalStoriesByStatus).length === 0)
     ) {
       return null;
     }
@@ -141,7 +142,7 @@ function Header({
         }).filter(Boolean)}
       </>
     );
-  }, [totalStoriesByStatus, filter.value, handleClick]);
+  }, [totalStoriesByStatus, filter.value, initialPageReady, handleClick]);
 
   const onSortChange = useCallback(
     (newSort) => {
@@ -168,9 +169,9 @@ function Header({
         searchPlaceholder={__('Search Stories', 'web-stories')}
         searchOptions={searchOptions}
         handleSearchChange={debouncedSearchChange}
-        showSearch
+        showSearch={initialPageReady}
         searchValue={search.keyword}
-        clearSearch={clearSearch}
+        onClear={clearSearch}
       >
         {HeaderToggleButtons}
       </PageHeading>
@@ -178,10 +179,9 @@ function Header({
       <BodyViewOptions
         showGridToggle
         showSortDropdown
-        showAuthorDropdown
+        showAuthorDropdown={showAuthorDropdown}
         resultsLabel={resultsLabel}
         layoutStyle={view.style}
-        isLoading={isLoading}
         handleLayoutSelect={view.toggleStyle}
         currentSort={sort.value}
         pageSortOptions={STORY_SORT_MENU_ITEMS}
@@ -199,7 +199,7 @@ function Header({
 
 Header.propTypes = {
   filter: FilterPropTypes.isRequired,
-  isLoading: PropTypes.bool,
+  initialPageReady: PropTypes.bool,
   search: SearchPropTypes.isRequired,
   sort: SortPropTypes.isRequired,
   stories: StoriesPropType,
@@ -207,6 +207,7 @@ Header.propTypes = {
   view: ViewPropTypes.isRequired,
   author: AuthorPropTypes,
   queryAuthorsBySearch: PropTypes.func,
+  showAuthorDropdown: PropTypes.bool,
 };
 
 export default memo(Header);

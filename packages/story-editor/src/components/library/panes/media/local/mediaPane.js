@@ -85,6 +85,7 @@ const SearchCount = styled(Text).attrs({
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 `;
 
 const ButtonsWrapper = styled.div`
@@ -283,11 +284,13 @@ function MediaPane(props) {
   };
 
   useEffect(() => {
-    trackEvent('search', {
-      search_type: 'media',
-      search_term: searchTerm,
-      search_filter: mediaType,
-    });
+    if (searchTerm.length > 0) {
+      trackEvent('search', {
+        search_type: 'media',
+        search_term: searchTerm,
+        search_filter: mediaType,
+      });
+    }
   }, [searchTerm, mediaType]);
 
   const incrementalSearchDebounceMedia = useFeature(
@@ -310,13 +313,12 @@ function MediaPane(props) {
   );
 
   const renderUploadButton = useCallback(
-    (open,{...rest}) => (
+    (open) => (
       <Button
         variant={BUTTON_VARIANTS.RECTANGLE}
         type={BUTTON_TYPES.SECONDARY}
         size={BUTTON_SIZES.SMALL}
         onClick={open}
-        {...rest}
       >
         {__('Upload', 'web-stories')}
       </Button>

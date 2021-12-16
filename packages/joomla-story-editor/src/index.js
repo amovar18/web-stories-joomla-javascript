@@ -19,29 +19,34 @@
  */
 import { render } from '@web-stories-wp/react';
 import StoryEditor, { InterfaceSkeleton } from '@web-stories-wp/story-editor';
+import { __ } from '@web-stories-wp/i18n';
 import styled from 'styled-components';
-import { deepMerge } from '@web-stories-wp/design-system';
-
 /**
  * Internal dependencies
  */
-import { HeaderLayout } from './header';
-import defaultConfig from './defaultConfig';
-import { getMedia, getStoryById, saveStoryById } from './api';
+import { HeaderLayout } from './components/header';
+import getApiCallbacks from './api/utils/getApiCallbacks';
+import MediaUpload from './components/mediaUpload';
+import DocumentPane from './components/documentPane';
 
-// @todo Instead of 100vh, may be the story editor should define its minimum required height to work properly,
-// and that height should be set with the <StoryEditor> component.
 const AppContainer = styled.div`
   height: 100vh;
 `;
-
 // @todo None of these should be required by default, https://github.com/google/web-stories-wp/pull/9569#discussion_r738458801
 function initialize(id, config) {
   const appElement = document.getElementById(id);
   render(
     <AppContainer>
       <StoryEditor config={config}>
-        <InterfaceSkeleton header={<HeaderLayout />} />
+        <InterfaceSkeleton
+          header={<HeaderLayout />}
+          inspectorTabs={{
+            document: {
+              title: __('Document', 'web-stories'),
+              Pane: DocumentPane,
+            },
+          }}
+        />
       </StoryEditor>
     </AppContainer>,
     appElement
@@ -49,89 +54,13 @@ function initialize(id, config) {
 }
 const initializeWithConfig = () => {
   const globalconfig = window.webStoriesEditorSettings.config;
-  const apiCallbacksNames = [
-    'getAuthors',
-    'getStoryById',
-    'getDemoStoryById',
-    'saveStoryById',
-    'autoSaveById',
-    'getMedia',
-    'getMediaById',
-    'getMutedMediaById',
-    'getOptimizedMediaById',
-    'uploadMedia',
-    'updateMedia',
-    'deleteMedia',
-    'getLinkMetadata',
-    'getCustomPageTemplates',
-    'addPageTemplate',
-    'deletePageTemplate',
-    'getCurrentUser',
-    'updateCurrentUser',
-    'getHotlinkInfo',
-    'getProxyUrl',
-    'getPublisherLogos',
-    'addPublisherLogo',
-    'getTaxonomies',
-    'getTaxonomyTerm',
-    'createTaxonomyTerm',
-  ];
-  const apiCallbacks = apiCallbacksNames.reduce((callbacks, name) => {
-    let response;
-
-    const storyResponse = {
-      title: { raw: '' },
-      excerpt: { raw: '' },
-      permalink_template: 'https://example.org/web-stories/%pagename%/',
-      style_presets: {
-        color: [],
-        textStyles: [],
-      },
-      date: '2021-10-26T12:38:38', // Publishing field breaks if date is not provided.
-      capabalities: {
-        hasUploadMediaAction: true,
-      },
-    };
-
-    switch (name) {
-      case 'getCurrentUser':
-        response = { id: 1 };
-        break;
-      case 'getDemoStoryById': // @todo https://github.com/google/web-stories-wp/pull/9569#discussion_r739076535
-        response = storyResponse;
-        break;
-      case 'getPublisherLogos':
-        response = [{ url: '' }];
-        break;
-      default:
-        response = {};
-    }
-
-    if ('saveStoryById' === name) {
-      callbacks[name] = (story) => {
-        return Promise.resolve(saveStoryById(globalconfig, story));
-      };
-    } else if ('getStoryById' === name) {
-      callbacks[name] = (id) => {
-        return getStoryById(globalconfig, id);
-      };
-    } else if ('getMedia' === name) {
-      callbacks[name] = ({ mediaType }) => {
-        return getMedia(globalconfig,mediaType);
-      };
-    } else {
-      callbacks[name] = () => Promise.resolve(response);
-    }
-
-    return callbacks;
-  }, {});
 
   const config = {
-    apiCallbacks,
+    apiCallbacks: getApiCallbacks(globalconfig),
+    MediaUpload,
+    ...globalconfig,
   };
-  const _config = deepMerge(defaultConfig, config);
-  const finalConfig = deepMerge(_config, globalconfig);
-  initialize('web-stories-editor', finalConfig);
+  initialize('web-stories-editor', config);
 };
 
 if ('loading' === document.readyState) {

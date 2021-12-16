@@ -18,7 +18,6 @@
  * External dependencies
  */
 const path = require('path');
-const glob = require('glob');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
@@ -54,7 +53,7 @@ const mode = isProduction ? 'production' : 'development';
 
 const sharedConfig = {
   mode,
-  devtool: !isProduction ? 'source-map' : undefined,
+  devtool: undefined,
   output: {
     path: path.resolve(
       '/Applications/XAMPP/xamppfiles/htdocs/Web-Stories-Joomla/webstories/media/',
@@ -107,6 +106,15 @@ const sharedConfig = {
         test: /\.js$/,
         use: ['source-map-loader'],
         enforce: 'pre',
+      },
+      {
+        test: /\.worker\.js$/,
+        use: {
+          loader: 'worker-loader',
+          options: {
+            inline: 'fallback',
+          },
+        },
       },
       {
         test: /\.js$/,
@@ -298,7 +306,7 @@ const editorAndDashboard = {
   ...sharedConfig,
   entry: {
     [EDITOR_CHUNK]: './packages/joomla-story-editor/src/index.js',
-    [DASHBOARD_CHUNK]: './packages/joomla-dashboard/index.js',
+    [DASHBOARD_CHUNK]: './packages/joomla-dashboard/src/index.js',
   },
   plugins: [
     ...sharedConfig.plugins.filter(
@@ -336,86 +344,6 @@ const editorAndDashboard = {
   },
 };
 
-const webStoriesScripts = {
-  ...sharedConfig,
-  entry: {
-    lightbox: './packages/stories-lightbox/src/index.js',
-    'carousel-view': './packages/stories-carousel/src/index.js',
-  },
-  plugins: [
-    ...sharedConfig.plugins,
-    new WebpackBar({
-      name: 'WP Frontend Scripts',
-      color: '#EEE070',
-    }),
-  ].filter(Boolean),
-};
-
-// Collect all core themes style sheet paths.
-const coreThemesBlockStylesPaths = glob.sync(
-  './packages/stories-block/src/css/core-themes/*.css'
-);
-
-// Build entry object for the Core Themes Styles.
-const coreThemeBlockStyles = coreThemesBlockStylesPaths.reduce((acc, curr) => {
-  const fileName = path.parse(curr).name;
-
-  return {
-    ...acc,
-    [`web-stories-theme-style-${fileName}`]: curr,
-  };
-}, {});
-
-const webStoriesBlock = {
-  ...sharedConfig,
-  entry: {
-    'web-stories-block': [
-      './packages/stories-block/src/index.js',
-      './packages/stories-block/src/block/edit.css',
-    ],
-    'web-stories-list-styles': './packages/stories-block/src/css/style.css',
-    'web-stories-embed': './packages/stories-block/src/css/embed.css',
-    ...coreThemeBlockStyles,
-  },
-  plugins: [
-    ...sharedConfig.plugins,
-
-    new WebpackBar({
-      name: 'Web Stories Block',
-      color: '#357BB5',
-    }),
-  ].filter(Boolean),
-};
-
-const activationNotice = {
-  ...sharedConfig,
-  entry: {
-    'web-stories-activation-notice':
-      './packages/activation-notice/src/index.js',
-  },
-  plugins: [
-    ...sharedConfig.plugins,
-    new WebpackBar({
-      name: 'Activation Notice',
-      color: '#fcd8ba',
-    }),
-  ].filter(Boolean),
-};
-
-const widgetScript = {
-  ...sharedConfig,
-  entry: {
-    'web-stories-widget': './packages/widget/src/index.js',
-  },
-  plugins: [
-    ...sharedConfig.plugins,
-    new WebpackBar({
-      name: 'WP Widget Script',
-      color: '#F757A5',
-    }),
-  ].filter(Boolean),
-};
-
 const storiesMCEButton = {
   ...sharedConfig,
   entry: {
@@ -444,12 +372,4 @@ const storiesImgareaselect = {
   ].filter(Boolean),
 };
 
-module.exports = [
-  editorAndDashboard,
-  activationNotice,
-  webStoriesBlock,
-  webStoriesScripts,
-  widgetScript,
-  storiesMCEButton,
-  storiesImgareaselect,
-];
+module.exports = [editorAndDashboard, storiesMCEButton, storiesImgareaselect];
